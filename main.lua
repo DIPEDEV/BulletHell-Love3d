@@ -174,6 +174,7 @@ end
 
 function resetGame()
     state = "intro"
+    love.mouse.setVisible(true)
     introRot = 0; introTimer = 0; introParticles = {}
     shopItems = {}
     upgrades = {}
@@ -209,6 +210,7 @@ end
 
 function startGame()
     state = "playing"
+    love.mouse.setVisible(false)
     if upgrades["start_bonus"] then score = score + 500 end
     if upgrades["clone"] then
         cloneData = { hist = {}, angle = player.aimAngle }
@@ -269,6 +271,7 @@ end
 
 function openShop()
     state = "shop"
+    love.mouse.setVisible(true)
     shopSelect = 0
     local eligible = {}
     for id, def in pairs(UPGRADE_DEFS) do
@@ -654,6 +657,7 @@ local function hitPlayer()
             return
         end
         state = "gameover"
+        love.mouse.setVisible(true)
         addParticle(player.x, player.y, 40, 0.0, 2)
         killStreak = 0
     end
@@ -1257,6 +1261,9 @@ function drawImmersiveHUD()
 end
 
 function drawShop()
+    local sc = math.min(W, H) / 700
+    sc = math.max(0.5, math.min(sc, 2.5))
+
     love.graphics.setColor(0.02, 0.02, 0.04, 0.85)
     love.graphics.rectangle("fill", 0, 0, W, H)
 
@@ -1264,26 +1271,26 @@ function drawShop()
     love.graphics.setColor(1, 0.85, 0.3, 1)
     local title = "UPGRADE STATION"
     local tw = fonts.shopBig:getWidth(title)
-    love.graphics.print(title, W / 2 - tw / 2, 40)
+    love.graphics.print(title, W / 2 - tw / 2, 40 * sc)
 
     love.graphics.setColor(0.5, 0.5, 0.5, 0.6)
     love.graphics.setFont(fonts.hud)
     local sub = "Spend score to enhance your ship"
     local sw = fonts.hud:getWidth(sub)
-    love.graphics.print(sub, W / 2 - sw / 2, 72)
+    love.graphics.print(sub, W / 2 - sw / 2, 75 * sc)
 
     if upgrades["discount"] then
         love.graphics.setColor(0.3, 0.9, 0.3, 0.7)
         love.graphics.setFont(fonts.tiny)
-        love.graphics.print("(-20% costs active)", W / 2 - 30, 88)
+        love.graphics.print("(-20% costs active)", W / 2 - 30 * sc, 90 * sc)
     end
 
-    local cardW = 160
-    local cardH = 230
-    local spacing = 16
+    local cardW = math.floor(160 * sc)
+    local cardH = math.floor(230 * sc)
+    local spacing = math.floor(16 * sc)
     local totalW = #shopItems * cardW + (#shopItems - 1) * spacing
     local startX = W / 2 - totalW / 2
-    local cardY = 110
+    local cardY = 110 * sc
 
     local rarityColors = {
         {0.45, 0.45, 0.55},  -- Common
@@ -1301,7 +1308,8 @@ function drawShop()
         local highlight = shopSelect == i
 
         love.graphics.setColor(0, 0, 0, 0.4)
-        love.graphics.rectangle("fill", cx + 3, cardY + 3, cardW, cardH, 8, 8)
+        local soff = math.floor(3 * sc)
+        love.graphics.rectangle("fill", cx + soff, cardY + soff, cardW, cardH, 8, 8)
 
         if highlight then
             love.graphics.setColor(0.2, 0.18, 0.12, 0.95)
@@ -1315,62 +1323,65 @@ function drawShop()
 
         local rc = rarityColors[def.rarity] or rarityColors[1]
         love.graphics.setColor(rc[1], rc[2], rc[3], 0.5)
-        love.graphics.rectangle("fill", cx + 6, cardY + 6, cardW - 12, 3, 2, 2)
+        love.graphics.rectangle("fill", cx + 6 * sc, cardY + 6 * sc, cardW - 12 * sc, 3, 2, 2)
 
         -- Rarity label
         love.graphics.setFont(fonts.tiny)
         love.graphics.setColor(rc[1], rc[2], rc[3], 0.8)
         local rlabel = rarityNames[def.rarity] or "COMMON"
         local rlw = fonts.tiny:getWidth(rlabel)
-        love.graphics.print(rlabel, cx + cardW / 2 - rlw / 2, cardY + 14)
+        love.graphics.print(rlabel, cx + cardW / 2 - rlw / 2, cardY + 14 * sc)
 
         local branchLabel = def.branch == "weapon" and "WEAPON" or (def.branch == "char" and "BODY" or "UTILITY")
         love.graphics.setColor(0.5, 0.5, 0.6, 0.6)
-        love.graphics.print(branchLabel, cx + cardW / 2 - fonts.tiny:getWidth(branchLabel) / 2, cardY + 28)
+        love.graphics.print(branchLabel, cx + cardW / 2 - fonts.tiny:getWidth(branchLabel) / 2, cardY + 28 * sc)
 
-        local iconSize = 22
+        local iconSize = math.floor(22 * sc)
+        local iconY = cardY + 80 * sc
         love.graphics.setColor(r * 0.15, g * 0.15, b * 0.15, 0.6)
-        love.graphics.circle("fill", cx + cardW / 2, cardY + 80, iconSize + 10)
-        drawShape(cx + cardW / 2, cardY + 80, totalTime * 2 + i, def.icon.sides, iconSize, r, g, b, 1, iconSize * 0.45, 1, 1, 1, 0.4)
+        love.graphics.circle("fill", cx + cardW / 2, iconY, iconSize + 10 * sc)
+        drawShape(cx + cardW / 2, iconY, totalTime * 2 + i, def.icon.sides, iconSize, r, g, b, 1, iconSize * 0.45, 1, 1, 1, 0.4)
 
         love.graphics.setFont(fonts.shop)
         love.graphics.setColor(1, 1, 1, 1)
         local nw = fonts.shop:getWidth(def.name)
-        love.graphics.print(def.name, cx + cardW / 2 - nw / 2, cardY + 115)
+        love.graphics.print(def.name, cx + cardW / 2 - nw / 2, cardY + 115 * sc)
 
         local cost = def.cost
         if upgrades["discount"] then cost = math.ceil(cost * 0.8) end
+        local costY = cardY + 145 * sc
         love.graphics.setColor(1, 0.85, 0.3, score >= cost and 1 or 0.35)
-        drawShape(cx + cardW / 2 - 18, cardY + 148, 0, 4, 6, 1, 0.85, 0.3, 1, 2.5, 0.9, 0.7, 0.2, 0.6)
+        drawShape(cx + cardW / 2 - 18 * sc, costY + 3 * sc, 0, 4, 6 * sc, 1, 0.85, 0.3, 1, 2.5 * sc, 0.9, 0.7, 0.2, 0.6)
         love.graphics.setFont(fonts.hudBig)
         local costStr = tostring(cost)
         local cw = fonts.hudBig:getWidth(costStr)
-        love.graphics.print(costStr, cx + cardW / 2 - cw / 2 + 5, cardY + 140)
+        love.graphics.print(costStr, cx + cardW / 2 - cw / 2 + 5 * sc, costY)
 
+        local prereqY = cardY + 175 * sc
         if def.prereq and not upgrades[def.prereq] then
             love.graphics.setFont(fonts.tiny)
             love.graphics.setColor(0.7, 0.3, 0.3, 0.8)
             local preq = "Need: " .. UPGRADE_DEFS[def.prereq].name
             local pw = fonts.tiny:getWidth(preq)
-            love.graphics.print(preq, cx + cardW / 2 - pw / 2, cardY + 175)
+            love.graphics.print(preq, cx + cardW / 2 - pw / 2, prereqY)
         elseif upgrades[id] then
             love.graphics.setFont(fonts.tiny)
             love.graphics.setColor(0.3, 0.8, 0.3, 0.8)
             local owned = "OWNED"
-            love.graphics.print(owned, cx + cardW / 2 - fonts.tiny:getWidth(owned) / 2, cardY + 175)
+            love.graphics.print(owned, cx + cardW / 2 - fonts.tiny:getWidth(owned) / 2, prereqY)
         end
 
         love.graphics.setFont(fonts.hud)
         love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
         local keyH = "[" .. i .. "]"
-        love.graphics.print(keyH, cx + cardW / 2 - fonts.hud:getWidth(keyH) / 2, cardY + cardH - 25)
+        love.graphics.print(keyH, cx + cardW / 2 - fonts.hud:getWidth(keyH) / 2, cardY + cardH - 25 * sc)
     end
 
     love.graphics.setFont(fonts.hud)
     love.graphics.setColor(0.5, 0.5, 0.6, 0.7)
     local footer = "Press 1-4 to buy  |  ENTER / SPACE to skip  |  Score: " .. score
     local fw = fonts.hud:getWidth(footer)
-    love.graphics.print(footer, W / 2 - fw / 2, cardY + cardH + 25)
+    love.graphics.print(footer, W / 2 - fw / 2, cardY + cardH + 25 * sc)
 end
 
 function drawIntro()
