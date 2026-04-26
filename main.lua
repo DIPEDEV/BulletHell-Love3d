@@ -149,19 +149,26 @@ local function roundRect(x, y, w, h, r)
     love.graphics.circle("fill", x + w - r, y + h - r, r)
 end
 
+local function createFonts()
+    local scale = math.min(W, H) / 700
+    scale = math.max(0.5, math.min(scale, 2.5))
+    local function fs(size) return math.floor(size * scale + 0.5) end
+    fonts.title    = love.graphics.newFont(fs(52))
+    fonts.wave     = love.graphics.newFont(fs(36))
+    fonts.hud      = love.graphics.newFont(fs(13))
+    fonts.hudBig   = love.graphics.newFont(fs(18))
+    fonts.gameover = love.graphics.newFont(fs(48))
+    fonts.score    = love.graphics.newFont(fs(20))
+    fonts.medium   = love.graphics.newFont(fs(16))
+    fonts.shop     = love.graphics.newFont(fs(15))
+    fonts.shopBig  = love.graphics.newFont(fs(28))
+    fonts.tiny     = love.graphics.newFont(fs(11))
+    fonts.popup    = love.graphics.newFont(fs(12))
+end
+
 function love.load()
     W, H = love.graphics.getDimensions()
-    fonts.title    = love.graphics.newFont(52)
-    fonts.wave     = love.graphics.newFont(36)
-    fonts.hud      = love.graphics.newFont(13)
-    fonts.hudBig   = love.graphics.newFont(18)
-    fonts.gameover = love.graphics.newFont(48)
-    fonts.score    = love.graphics.newFont(20)
-    fonts.medium   = love.graphics.newFont(16)
-    fonts.shop     = love.graphics.newFont(15)
-    fonts.shopBig  = love.graphics.newFont(28)
-    fonts.tiny     = love.graphics.newFont(11)
-    fonts.popup    = love.graphics.newFont(12)
+    createFonts()
     resetGame()
 end
 
@@ -917,13 +924,7 @@ function love.update(dt)
             spawnEnemy(spawn.type)
         end
         if #waveSpawnQueue == 0 and #enemies == 0 and #eBullets == 0 then
-            local bonus = wave * 200
-            if upgrades["wave_bonus"] then bonus = math.floor(bonus * 1.5) end
-            if isPowerActive("score2x") then bonus = bonus * 2 end
-            if upgrades["score_boost"] then bonus = math.floor(bonus * 1.25) end
-            score = score + bonus
             waveActive = false
-            addScorePopup(W / 2, H / 2, "+" .. bonus .. " BONUS", 1, 0.85, 0.3)
             openShop()
         end
     end
@@ -1367,8 +1368,7 @@ function drawShop()
 
     love.graphics.setFont(fonts.hud)
     love.graphics.setColor(0.5, 0.5, 0.6, 0.7)
-    local recycleText = upgrades["recycle"] and " (+" .. (#shopItems * 60) .. " score if skip)" or ""
-    local footer = "Press 1-4 to buy  |  ENTER / SPACE to skip" .. recycleText .. "  |  Score: " .. score
+    local footer = "Press 1-4 to buy  |  ENTER / SPACE to skip  |  Score: " .. score
     local fw = fonts.hud:getWidth(footer)
     love.graphics.print(footer, W / 2 - fw / 2, cardY + cardH + 25)
 end
@@ -1655,6 +1655,10 @@ function isFocusVisible()
 end
 
 function love.keypressed(key)
+    if key == "f11" then
+        local fullscreen = not love.window.getFullscreen()
+        love.window.setFullscreen(fullscreen)
+    end
     if key == "escape" then love.event.quit() end
     if state == "intro" and (key == "return" or key == "enter") then startGame() end
     if state == "gameover" and (key == "return" or key == "enter" or key == "r") then resetGame() end
@@ -1664,9 +1668,6 @@ function love.keypressed(key)
         if key == "3" and #shopItems >= 3 then buyUpgrade(shopItems[3]) end
         if key == "4" and #shopItems >= 4 then buyUpgrade(shopItems[4]) end
         if key == "return" or key == "enter" or key == "space" then
-            if upgrades["recycle"] then
-                score = score + #shopItems * 60
-            end
             state = "playing"
             startNextWave()
         end
@@ -1680,4 +1681,16 @@ end
 
 function love.resize(w, h)
     W, H = w, h
+    createFonts()
+    stars = {}
+    for _ = 1, 80 do
+        table.insert(stars, { x = math.random() * W, y = math.random() * H, r = math.random() * 1.5 + 0.5, b = math.random() * 0.5 + 0.5 })
+    end
+    if player then
+        local hr = getHitboxRadius()
+        if player.x < hr then player.x = hr end
+        if player.x > W - hr then player.x = W - hr end
+        if player.y < hr then player.y = hr end
+        if player.y > H - hr then player.y = H - hr end
+    end
 end
